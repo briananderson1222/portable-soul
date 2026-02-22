@@ -175,11 +175,11 @@ sync_mirror() {
 }
 
 do_commit() {
-  $AUTO_COMMIT || return
-  if $DRY_RUN; then log "[dry-run] Would commit changes"; return; fi
+  $AUTO_COMMIT || return 0
+  if $DRY_RUN; then log "[dry-run] Would commit changes"; return 0; fi
   cd "$SOUL_DIR"
-  [[ -d .git ]] || { log "Not a git repo, skipping commit"; return; }
-  if git diff --quiet && git diff --cached --quiet; then log "No changes to commit"; return; fi
+  [[ -d .git ]] || { log "Not a git repo, skipping commit"; return 0; }
+  if git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null; then log "No changes to commit"; return 0; fi
   git add -A
   git commit -m "soul: sync knowledge $(date +%Y-%m-%d)" --quiet
   log "Committed changes"

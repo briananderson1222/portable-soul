@@ -191,19 +191,24 @@ ensure_dirs
 
 DOMAINS_JSON=$(parse_config)
 
-# Process each domain from config
+# Write domain list to temp file to avoid subshell issues with piped while-read
+DOMAIN_LIST=$(mktemp)
 echo "$DOMAINS_JSON" | python3 -c "
 import json, sys
 domains = json.load(sys.stdin)
 for name, d in domains.items():
     print(f\"{name}\t{d['source']}\t{d['dest']}\t{d['strategy']}\")
-" | while IFS=$'\t' read -r name source dest strategy; do
+" > "$DOMAIN_LIST"
+
+while IFS=$'\t' read -r name source dest strategy; do
   case "$strategy" in
     map) sync_mapped "$source" ;;
     mirror) sync_mirror "$name" "$source" "$dest" ;;
     *) log "Unknown strategy '$strategy' for domain '$name'" ;;
   esac
-done
+done < "$DOMAIN_LIST"
+
+rm -f "$DOMAIN_LIST"
 
 do_commit
 log "Done."

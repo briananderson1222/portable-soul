@@ -114,12 +114,18 @@ EOF
 
   if $DRY_RUN; then log "[dry-run] Would merge $(basename "$src") → $2 ($section)"; return; fi
 
-  # Append content under the right section
+  # Write content to a temp file for insertion
+  local content_file
+  content_file=$(mktemp)
+  echo "" >> "$content_file"
+  echo "$content" >> "$content_file"
+
+  # Insert content after the section heading using sed
   local tmpfile="$dest.tmp"
-  awk -v section="$section" -v content="$content" '
-    $0 == section { print; print ""; print content; next }
-    { print }
-  ' "$dest" > "$tmpfile" && mv "$tmpfile" "$dest"
+  local escaped_section
+  escaped_section=$(echo "$section" | sed 's/[\/&]/\\&/g')
+  sed "/$escaped_section/r $content_file" "$dest" > "$tmpfile" && mv "$tmpfile" "$dest"
+  rm -f "$content_file"
 
   log "Merged $(basename "$src") → $2 ($section)"
 }

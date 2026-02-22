@@ -199,11 +199,13 @@ domains = json.load(sys.stdin)
 for name, d in domains.items():
     print(f\"{name}\t{d['source']}\t{d['dest']}\t{d['strategy']}\")
 " > "$DOMAIN_LIST"
+echo "" >> "$DOMAIN_LIST"
 
 while IFS=$'\t' read -r name source dest strategy || [[ -n "$name" ]]; do
+  [[ -n "$name" ]] || continue
   case "$strategy" in
-    map) sync_mapped "$source" ;;
-    mirror) sync_mirror "$name" "$source" "$dest" ;;
+    map) sync_mapped "$source" || true ;;
+    mirror) sync_mirror "$name" "$source" "$dest" || true ;;
     *) log "Unknown strategy '$strategy' for domain '$name'" ;;
   esac
 done < "$DOMAIN_LIST"

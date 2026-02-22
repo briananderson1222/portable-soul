@@ -19,7 +19,6 @@ CORE_DIR="$SOUL_DIR/core"
 AGENT_SOURCES=(
   # Add your agent framework's knowledge directory here, e.g.:
   # "$HOME/.agent/knowledge/memories"
-  # "$HOME/.kiro/agents/MyAgent/knowledge/memories"
 )
 
 DRY_RUN=false
@@ -42,34 +41,25 @@ if [[ -n "$CUSTOM_SOURCE" ]]; then
 fi
 
 # --- File mapping ---
-# Maps agent knowledge files → portable soul files
-# Format: "source_filename:dest_path:merge_strategy"
-# Strategies: copy (overwrite), append (add new entries), merge-sections (combine by heading)
+# Returns "dest_path:strategy" for a given source filename
 
-declare -A FILE_MAP=(
-  ["lessons.md"]="knowledge/learning.md:merge-sections"
-  ["preferences.md"]="knowledge/learning.md:merge-sections"
-  ["decisions.md"]="knowledge/learning.md:merge-sections"
-  ["user-profile.md"]="core/user.md:copy"
-  ["bookmarks.md"]="knowledge/bookmarks.md:copy"
-  ["continuity.md"]="knowledge/continuity.md:copy"
-  ["sessions.md"]="knowledge/continuity.md:merge-sections"
-  ["followups.md"]="knowledge/followups.md:copy"
-)
-
-# Section mapping for merge-sections strategy
-# Maps source file → which section heading it goes under in the dest
-declare -A SECTION_MAP=(
-  ["lessons.md"]="## Lessons"
-  ["preferences.md"]="## Preferences"
-  ["decisions.md"]="## Decisions"
-  ["sessions.md"]="## Sessions"
-)
+get_mapping() {
+  case "$1" in
+    lessons.md)      echo "knowledge/learning.md:merge-sections:## Lessons" ;;
+    preferences.md)  echo "knowledge/learning.md:merge-sections:## Preferences" ;;
+    decisions.md)    echo "knowledge/learning.md:merge-sections:## Decisions" ;;
+    user-profile.md) echo "core/user.md:copy:" ;;
+    bookmarks.md)    echo "knowledge/bookmarks.md:copy:" ;;
+    continuity.md)   echo "knowledge/continuity.md:copy:" ;;
+    sessions.md)     echo "knowledge/continuity.md:merge-sections:## Sessions" ;;
+    followups.md)    echo "knowledge/followups.md:copy:" ;;
+    *) echo "" ;;
+  esac
+}
 
 # --- Functions ---
 
 log() { echo "[soul-sync] $*"; }
-dry() { if $DRY_RUN; then echo "[dry-run] $*"; return 0; fi; return 1; }
 
 ensure_dirs() {
   mkdir -p "$KNOWLEDGE_DIR" "$CORE_DIR"
@@ -83,29 +73,25 @@ sync_file_copy() {
     return  # identical, skip
   fi
 
-  if dry "Would copy $src → $dest"; then return; fi
+  if $DRY_RUN; then log "[dry-run] Would copy $(basename "$src") → $2"; return; fi
   mkdir -p "$(dirname "$dest")"
   cp "$src" "$dest"
   log "Copied $(basename "$src") → $2"
 }
 
 sync_file_merge_sections() {
-  local src="$1" dest="$SOUL_DIR/$2" section="${SECTION_MAP[$(basename "$src")]:-}"
+  local src="$1" dest="$SOUL_DIR/$2" section="$3"
   if [[ ! -f "$src" ]]; then return; fi
-  if [[ -z "$section" ]]; then
-    # No section mapping, fall back to copy
-    sync_file_copy "$src" "$2"
-    return
-  fi
+  if [[ -z "$section" ]]; then sync_file_copy "$src" "$2"; return; fi
 
-  # Extract content from source (skip the first heading line)
+  # Extract content from source (skip the first heading line, trim empty lines)
   local content
-  content=$(tail -n +2 "$src" | sed '/^$/d' | head -50)
+  content=$(sed '1{/^#/d;}' "$src" | sed '/^<!--/,/-->/d' | sed '/^$/d' | head -50)
   if [[ -z "$content" ]]; then return; fi
 
   # Ensure dest exists with basic structure
   if [[ ! -f "$dest" ]]; then
-    if dry "Would create $dest with section $section"; then return; fi
+    if $DRY_RUN; then log "[dry-run] Would create $2"; return; fi
     mkdir -p "$(dirname "$dest")"
     cat > "$dest" << 'EOF'
 # Learning
@@ -119,18 +105,21 @@ EOF
     log "Created $2"
   fi
 
-  # Check if content already present (simple dedup)
-  if grep -qF "$(echo "$content" | head -1)" "$dest" 2>/dev/null; then
+  # Check if content already present (simple dedup on first non-empty line)
+  local first_line
+  first_line=$(echo "$content" | grep -v '^$' | head -1)
+  if [[ -n "$first_line" ]] && grep -qF "$first_line" "$dest" 2>/dev/null; then
     return  # already synced
   fi
 
-  if dry "Would merge $(basename "$src") into $2 under '$section'"; then return; fi
+  if $DRY_RUN; then log "[dry-run] Would merge $(basename "$src") → $2 ($section)"; return; fi
 
-  # Append content under the right section using awk
+  # Append content under the right section
+  local tmpfile="$dest.tmp"
   awk -v section="$section" -v content="$content" '
     $0 == section { print; print ""; print content; next }
     { print }
-  ' "$dest" > "$dest.tmp" && mv "$dest.tmp" "$dest"
+  ' "$dest" > "$tmpfile" && mv "$tmpfile" "$dest"
 
   log "Merged $(basename "$src") → $2 ($section)"
 }
@@ -146,20 +135,24 @@ sync_source() {
 
   for src_file in "$source_dir"/*.md; do
     [[ -f "$src_file" ]] || continue
-    local basename=$(basename "$src_file")
-    local mapping="${FILE_MAP[$basename]:-}"
+    local basename
+    basename=$(basename "$src_file")
+    local mapping
+    mapping=$(get_mapping "$basename")
 
     if [[ -z "$mapping" ]]; then
       log "  No mapping for $basename, skipping"
       continue
     fi
 
-    local dest_path="${mapping%%:*}"
-    local strategy="${mapping##*:}"
+    local dest_path strategy section
+    dest_path=$(echo "$mapping" | cut -d: -f1)
+    strategy=$(echo "$mapping" | cut -d: -f2)
+    section=$(echo "$mapping" | cut -d: -f3-)
 
     case "$strategy" in
       copy) sync_file_copy "$src_file" "$dest_path" ;;
-      merge-sections) sync_file_merge_sections "$src_file" "$dest_path" ;;
+      merge-sections) sync_file_merge_sections "$src_file" "$dest_path" "$section" ;;
       *) log "  Unknown strategy '$strategy' for $basename" ;;
     esac
   done
@@ -167,7 +160,7 @@ sync_source() {
 
 do_commit() {
   if ! $AUTO_COMMIT; then return; fi
-  if $DRY_RUN; then dry "Would commit changes"; return; fi
+  if $DRY_RUN; then log "[dry-run] Would commit changes"; return; fi
 
   cd "$SOUL_DIR"
   if [[ ! -d .git ]]; then
@@ -180,7 +173,8 @@ do_commit() {
     return
   fi
 
-  local timestamp=$(date +%Y-%m-%d)
+  local timestamp
+  timestamp=$(date +%Y-%m-%d)
   git add -A
   git commit -m "soul: sync knowledge $timestamp" --quiet
   log "Committed changes"

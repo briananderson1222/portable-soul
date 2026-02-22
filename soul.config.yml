@@ -14,21 +14,18 @@ knowledge:
   path: ./knowledge
 
   # Knowledge domains — separate areas of knowledge with their own structure.
-  # The general domain uses file mapping (lessons→learning.md, etc.).
-  # Named domains use mirror strategy (copy full directory tree) by default.
+  # Each domain maps an agent runtime directory to a soul repo directory.
+  # Sync is bidirectional: rsync --update (newer file wins).
   domains: {}
     # general:
     #   source: ~/.agent/knowledge/memories
     #   dest: ./knowledge
-    #   strategy: map          # use file mapping rules
     # sales:
     #   source: ~/.agent/knowledge/sales
     #   dest: ./knowledge/sales
-    #   strategy: mirror       # copy entire directory tree
     # career:
     #   source: ~/.agent/knowledge/career
     #   dest: ./knowledge/career
-    #   strategy: mirror
 
   # Provider-specific configuration
   config: {}

@@ -129,33 +129,35 @@ The agent framework doesn't need to know about portable-soul. It continues to wo
 
 ### File mapping: Agent Framework → Portable Soul
 
-The sync tool maps agent knowledge files to portable soul format:
+The soul repo uses the same file structure as the agent runtime. No format translation.
 
-| Agent Knowledge File | Portable Soul File | Strategy |
-|---|---|---|
-| `lessons.md` | `knowledge/learning.md` (Lessons section) | Merge by section |
-| `preferences.md` | `knowledge/learning.md` (Preferences section) | Merge by section |
-| `decisions.md` | `knowledge/learning.md` (Decisions section) | Merge by section |
-| `user-profile.md` | `core/user.md` | Copy |
-| `bookmarks.md` | `knowledge/bookmarks.md` | Copy |
-| `continuity.md` | `knowledge/continuity.md` | Copy |
-| `sessions.md` | `knowledge/continuity.md` (Sessions section) | Merge by section |
-| `followups.md` | `knowledge/followups.md` | Copy |
+| Agent Knowledge File | Soul Repo File |
+|---|---|
+| `lessons.md` | `knowledge/lessons.md` |
+| `preferences.md` | `knowledge/preferences.md` |
+| `decisions.md` | `knowledge/decisions.md` |
+| `user-profile.md` | `knowledge/user-profile.md` |
+| `bookmarks.md` | `knowledge/bookmarks.md` |
+| `continuity.md` | `knowledge/continuity.md` |
+| `sessions.md` | `knowledge/sessions.md` |
+| `followups.md` | `knowledge/followups.md` |
 
-These mappings are configurable in the sync tool. If your agent framework uses different file names or structures, adjust the mapping.
+Sync is bidirectional: `rsync --update` copies whichever side has the newer file. No merging, no splitting, no translation.
 
 ### Sync tool
 
-`tools/soul-sync` extracts knowledge from agent runtimes into the soul repo:
+`tools/soul-sync` syncs knowledge bidirectionally between agent runtimes and the soul repo. All sources and domains are configured in `soul.config.yml`.
 
 ```bash
-soul-sync                    # Sync from configured agent sources
-soul-sync --dry-run          # Preview changes without writing
-soul-sync --commit           # Sync and auto-commit to soul repo
-soul-sync --source /path     # Sync from a specific directory
+soul-sync                    # Forward: agent runtime → soul repo
+soul-sync --reverse          # Reverse: soul repo → agent runtime
+soul-sync --dry-run          # Preview changes
+soul-sync --commit           # Forward sync + auto-commit soul repo
 ```
 
-Can be run manually, as a cron job, or as a boo scheduled task. Configure source directories in the script or via `SOUL_DIR` environment variable.
+All sync is straight `rsync --update` (newer file wins). No format translation, no merging, no splitting. The soul repo uses the same file structure as the agent runtime.
+
+Can be run manually, as a cron job, or as a boo scheduled task.
 
 ### Other consumers
 

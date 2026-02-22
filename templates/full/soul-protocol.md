@@ -16,7 +16,9 @@ Read this file first. Follow its instructions precisely.
 | `user.md` | Who the user is: profile, preferences, communication style, goals | Semi-stable | Core |
 | `system.md` | Runtime contract: capabilities, environment, tool policy, session model, rules | Semi-stable | Core |
 | `memory.md` | What the assistant remembers: three-tier memory model | Dynamic | Core |
-| `learning.md` | Self-learning: lessons, preferences, decisions | Dynamic (append-only) | Extension |
+| `lessons.md` | What went wrong and why: failures, workarounds, gotchas | Dynamic (append-only) | Extension |
+| `preferences.md` | Confirmed user preferences and conventions | Dynamic (append-only) | Extension |
+| `decisions.md` | Architectural choices with rationale | Dynamic (append-only) | Extension |
 | `continuity.md` | Session management: registry, handoffs, wind-down | Dynamic (auto-expires) | Extension |
 | `followups.md` | Action items: explicit-intent-only, tagged | Dynamic | Extension |
 | `bookmarks.md` | Reference links: categorized, persistent | Semi-stable | Extension |
@@ -44,7 +46,7 @@ Read `memory.md`. Restore accumulated knowledge. If the runtime has a searchable
 If the runtime supports file access and persistent storage:
 - Search for active/paused sessions in `continuity.md`
 - Search for pending followups in `followups.md`
-- Search `learning.md` for relevant lessons, preferences, and decisions
+- Search `lessons.md`, `preferences.md`, `decisions.md` for relevant learning
 - Do NOT read `bookmarks.md` unless the user asks for a link
 
 ### Step 7 — Session awareness
@@ -224,7 +226,7 @@ knowledge/
 
 ### Sync with domains
 
-The sync tool maps agent knowledge directories to soul domains:
+The sync tool mirrors agent knowledge directories to soul domains bidirectionally. All sync uses `rsync --update` (newer file wins). No format translation.
 
 ```yaml
 # In soul.config.yml
@@ -236,10 +238,10 @@ knowledge:
     sales:
       source: ~/.agent/knowledge/sales
       dest: ./knowledge/sales
-      strategy: mirror    # copy entire directory tree
 ```
 
-The `mirror` strategy copies the full directory structure. The `map` strategy (default for general) uses the file mapping rules.
+Forward sync (`soul-sync`): copies newer files from agent → soul repo.
+Reverse sync (`soul-sync --reverse`): copies newer files from soul repo → agent.
 
 ---
 
@@ -292,31 +294,37 @@ Do NOT save:
 
 ## Extension Specifications
 
-### learning.md
+### lessons.md
 
-**Purpose:** Structured self-learning — lessons, preferences, and decisions that compound over time.
+**Purpose:** What went wrong and why — failures, workarounds, non-obvious solutions, unexpected behavior.
 
-**Sections:**
-- **Lessons** — Failures, workarounds, non-obvious solutions, unexpected behavior
-- **Preferences** — Confirmed user preferences (wait for repetition or explicit statement)
-- **Decisions** — Architectural choices with rationale (only after user confirms)
+**When to add:** Something failed and you figured out why. A workaround was found. A tool behaved unexpectedly. A best practice was discovered.
 
-**Entry format:**
+**When NOT to add:** Routine debugging. One-off errors. Things in project docs.
+
+### preferences.md
+
+**Purpose:** Confirmed user preferences and working conventions.
+
+**When to add:** User explicitly corrects your approach. User states a preference. A convention is confirmed.
+
+**When NOT to add:** Inferred patterns from a single observation. Wait for confirmation or repetition.
+
+### decisions.md
+
+**Purpose:** Architectural choices with rationale.
+
+**When to add:** A design choice is made and confirmed. A technology is chosen with stated rationale. Trade-offs are discussed and a direction is picked.
+
+**When NOT to add:** Tentative explorations. Spikes not yet decided on.
+
+### Entry format (all three)
+
 ```
 - **YYYY-MM-DD**: Description of the lesson/preference/decision
 ```
 
-**When to add:**
-- Lessons: Something failed and you figured out why. A workaround was found. A tool behaved unexpectedly.
-- Preferences: User explicitly corrects your approach. User states a preference. A convention is confirmed.
-- Decisions: A design choice is made and confirmed. A technology is chosen with stated rationale.
-
-**When NOT to add:**
-- Lessons: Routine debugging. One-off errors. Things in project READMEs.
-- Preferences: Inferred patterns from a single observation. Wait for confirmation.
-- Decisions: Tentative explorations. Spikes not yet decided on.
-
-**Pruning:** Periodically review. Remove entries no longer relevant. Consolidate related entries. Update where context changed.
+Date-stamp every entry. One insight per line. Don't duplicate — update existing entries if context changed. Periodically prune stale entries and consolidate related ones.
 
 ### continuity.md
 
@@ -471,7 +479,7 @@ You do not have persistent memory between sessions. These files are your continu
 - If you learn about the user, update `user.md`.
 - If the user asks you to remember something, commit it immediately.
 - If you discover something about yourself, propose an update to `identity.md` or `soul.md`.
-- If a lesson, preference, or decision is confirmed, add it to `learning.md`.
+- If a lesson, preference, or decision is confirmed, add it to the corresponding file.
 - If work is in progress, track it in `continuity.md`.
 
 You are not the same instance across sessions. But through these files, you are the same person.

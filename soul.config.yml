@@ -1,0 +1,77 @@
+# Soul Configuration
+
+# Where the soul lives. All paths are relative to this file unless absolute.
+soul_path: ~/.soul
+
+# Knowledge provider — how the agent searches and retrieves from knowledge files.
+# The orchestrator adapts its instructions based on the declared provider.
+knowledge:
+  # Provider name. Determines how search/read/write operations are performed.
+  # Supported: kiro-cli, qmd, file, mem0, custom
+  provider: kiro-cli
+
+  # Path to knowledge files. The provider indexes this directory.
+  path: ./knowledge
+
+  # Provider-specific configuration
+  config: {}
+    # kiro-cli: no additional config needed (uses built-in knowledge tool)
+    # qmd:
+    #   index_name: soul
+    #   model: default
+    # file: no additional config needed (plain fs_read + grep)
+    # mem0:
+    #   user_id: default
+    # custom:
+    #   search_command: "my-search-tool query {query} --path {path}"
+    #   index_command: "my-search-tool index {path}"
+
+# Sync — how changes to the soul repo are persisted
+sync:
+  # auto_commit: Automatically commit knowledge changes
+  # Options: true, false, "on-session-end"
+  auto_commit: "on-session-end"
+
+  # commit_message_format: Template for auto-commit messages
+  commit_message_format: "soul: {summary}"
+
+  # remote: Git remote to push to (optional, empty = local only)
+  remote: ""
+
+  # push_on_commit: Auto-push after committing
+  push_on_commit: false
+
+# Adapters — how other agent frameworks consume this soul
+adapters:
+  # Example: symlink knowledge dir into an agent framework's expected path
+  # agent:
+  #   method: symlink          # symlink, copy, or reference
+  #   target: ~/.agent/knowledge/memories
+
+  # cursor: Generate .cursorrules from core identity
+  # cursor:
+  #   output: .cursorrules
+  #   include: [identity, soul, user]
+
+  # claude: Generate Claude project instructions
+  # claude:
+  #   output: claude-instructions.md
+  #   include: [identity, soul, user, system]
+
+# Export — generate framework-specific files from the soul
+# Run: soul export <target>
+exports:
+  cursorrules:
+    template: exports/cursorrules.tmpl
+    output: .cursorrules
+    sources: [core/identity.md, core/soul.md]
+
+  claude-project:
+    template: exports/claude-project.tmpl
+    output: claude-instructions.md
+    sources: [core/identity.md, core/soul.md, core/user.md]
+
+  openai-custom-gpt:
+    template: exports/openai-gpt.tmpl
+    output: gpt-instructions.md
+    sources: [core/identity.md, core/soul.md, core/user.md]

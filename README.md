@@ -36,10 +36,13 @@ In chat-only LLMs (stateless mode), the assistant proposes memory updates using 
 Additional files that activate when the runtime supports file access, tools, and persistent storage. These are what make the soul useful for real work.
 
 ```
-learning.md          ← Self-learning: lessons, preferences, decisions
+lessons.md           ← What went wrong and why: failures, workarounds, gotchas
+preferences.md       ← Confirmed user preferences and conventions
+decisions.md         ← Architectural choices with rationale
 continuity.md        ← Session management: registry, handoffs, wind-down
 followups.md         ← Action items: explicit-intent-only, tagged
 bookmarks.md         ← Reference links: categorized, persistent
+journal/             ← Daily session logs: raw capture, curated over time
 ```
 
 The extended orchestrator also upgrades memory from two tiers to three:

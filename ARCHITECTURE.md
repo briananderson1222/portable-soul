@@ -119,10 +119,15 @@ Agent Framework (any)
 │   └── user.md
 └── knowledge/                        ← Knowledge layer
     ├── memory.md
-    ├── learning.md
+    ├── lessons.md
+    ├── preferences.md
+    ├── decisions.md
     ├── continuity.md
+    ├── sessions.md
     ├── followups.md
-    └── bookmarks.md
+    ├── bookmarks.md
+    ├── journal/
+    └── sales/                        ← (example domain)
 ```
 
 The agent framework doesn't need to know about portable-soul. It continues to work as-is. The sync tool runs externally and extracts the portable parts.

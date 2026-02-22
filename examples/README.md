@@ -35,10 +35,14 @@ my-soul-impl/
 │   │   └── user.md          ← your real profile
 │   ├── knowledge/           ← synced from agent runtime
 │   │   ├── memory.md
-│   │   ├── learning.md
+│   │   ├── lessons.md
+│   │   ├── preferences.md
+│   │   ├── decisions.md
 │   │   ├── continuity.md
+│   │   ├── sessions.md
 │   │   ├── followups.md
-│   │   └── bookmarks.md
+│   │   ├── bookmarks.md
+│   │   └── journal/
 │   └── soul.config.yml      ← your provider + sync config
 └── sync.sh                  ← wraps spec/tools/soul-sync with your paths
 ```

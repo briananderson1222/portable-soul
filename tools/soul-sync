@@ -1,50 +1,56 @@
 #!/usr/bin/env bash
 # soul-sync — Extract knowledge from agent runtimes into the portable soul repo
 #
+# Reads soul.config.yml from SOUL_DIR for all sources and domains.
+# No hardcoded paths — everything is config-driven.
+#
 # Usage:
-#   soul-sync                          # Sync from default sources
-#   soul-sync --dry-run                # Show what would change without writing
-#   soul-sync --commit                 # Sync and auto-commit
-#   soul-sync --source /path           # Sync general knowledge from a specific directory
-#   soul-sync --domain sales /path     # Mirror a domain directory
+#   soul-sync                    # Sync from configured sources
+#   soul-sync --dry-run          # Show what would change without writing
+#   soul-sync --commit           # Sync and auto-commit
 
 set -euo pipefail
 
-# --- Configuration ---
-
 SOUL_DIR="${SOUL_DIR:-$HOME/.soul}"
+CONFIG_FILE="$SOUL_DIR/soul.config.yml"
 KNOWLEDGE_DIR="$SOUL_DIR/knowledge"
 CORE_DIR="$SOUL_DIR/core"
 
-# Agent knowledge directories to sync FROM (configure for your setup)
-AGENT_SOURCES=(
-  # Add your agent framework's knowledge directory here, e.g.:
-  # "$HOME/.agent/knowledge/memories"
-)
-
 DRY_RUN=false
 AUTO_COMMIT=false
-CUSTOM_SOURCE=""
-DOMAINS=()  # pairs of "name:source_path"
-
-# --- Parse args ---
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run) DRY_RUN=true; shift ;;
     --commit) AUTO_COMMIT=true; shift ;;
-    --source) CUSTOM_SOURCE="$2"; shift 2 ;;
-    --domain) DOMAINS+=("$2:$3"); shift 3 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
 done
 
-if [[ -n "$CUSTOM_SOURCE" ]]; then
-  AGENT_SOURCES=("$CUSTOM_SOURCE")
-fi
+# --- Config parsing ---
 
-# --- File mapping ---
-# Returns "dest_path:strategy" for a given source filename
+parse_config() {
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "No config found at $CONFIG_FILE" >&2
+    exit 1
+  fi
+
+  # Parse domains from soul.config.yml using python3
+  python3 -c "
+import yaml, json, os
+with open('$CONFIG_FILE') as f:
+    cfg = yaml.safe_load(f)
+domains = cfg.get('knowledge', {}).get('domains', {})
+# Expand ~ in paths
+for name, d in domains.items():
+    d['source'] = os.path.expanduser(d.get('source', ''))
+    d['dest'] = d.get('dest', './knowledge/' + name)
+    d['strategy'] = d.get('strategy', 'mirror' if name != 'general' else 'map')
+print(json.dumps(domains))
+"
+}
+
+# --- File mapping for 'map' strategy ---
 
 get_mapping() {
   case "$1" in
@@ -60,22 +66,16 @@ get_mapping() {
   esac
 }
 
-# --- Functions ---
+# --- Sync functions ---
 
 log() { echo "[soul-sync] $*"; }
 
-ensure_dirs() {
-  mkdir -p "$KNOWLEDGE_DIR" "$CORE_DIR"
-}
+ensure_dirs() { mkdir -p "$KNOWLEDGE_DIR" "$CORE_DIR"; }
 
 sync_file_copy() {
   local src="$1" dest="$SOUL_DIR/$2"
-  if [[ ! -f "$src" ]]; then return; fi
-
-  if [[ -f "$dest" ]] && diff -q "$src" "$dest" >/dev/null 2>&1; then
-    return  # identical, skip
-  fi
-
+  [[ -f "$src" ]] || return
+  if [[ -f "$dest" ]] && diff -q "$src" "$dest" >/dev/null 2>&1; then return; fi
   if $DRY_RUN; then log "[dry-run] Would copy $(basename "$src") → $2"; return; fi
   mkdir -p "$(dirname "$dest")"
   cp "$src" "$dest"
@@ -84,18 +84,17 @@ sync_file_copy() {
 
 sync_file_merge_sections() {
   local src="$1" dest="$SOUL_DIR/$2" section="$3"
-  if [[ ! -f "$src" ]]; then return; fi
-  if [[ -z "$section" ]]; then sync_file_copy "$src" "$2"; return; fi
+  [[ -f "$src" ]] || return
+  [[ -n "$section" ]] || { sync_file_copy "$src" "$2"; return; }
 
-  # Extract content from source (skip the first heading line, trim empty lines)
   local content
   content=$(sed '1{/^#/d;}' "$src" | sed '/^<!--/,/-->/d' | sed '/^$/d' | head -50)
-  if [[ -z "$content" ]]; then return; fi
+  [[ -n "$content" ]] || return
 
-  # Ensure dest exists with basic structure
   if [[ ! -f "$dest" ]]; then
     if $DRY_RUN; then log "[dry-run] Would create $2"; return; fi
     mkdir -p "$(dirname "$dest")"
+    # Create with all known section headings
     cat > "$dest" << 'EOF'
 # Learning
 
@@ -108,22 +107,23 @@ EOF
     log "Created $2"
   fi
 
-  # Check if content already present (simple dedup on first non-empty line)
+  # Ensure target section heading exists
+  if ! grep -qF "$section" "$dest" 2>/dev/null; then
+    if $DRY_RUN; then log "[dry-run] Would add '$section' to $2"; return; fi
+    echo -e "\n$section\n" >> "$dest"
+  fi
+
   local first_line
   first_line=$(echo "$content" | grep -v '^$' | head -1)
-  if [[ -n "$first_line" ]] && grep -qF "$first_line" "$dest" 2>/dev/null; then
-    return  # already synced
-  fi
+  if [[ -n "$first_line" ]] && grep -qF "$first_line" "$dest" 2>/dev/null; then return; fi
 
   if $DRY_RUN; then log "[dry-run] Would merge $(basename "$src") → $2 ($section)"; return; fi
 
-  # Write content to a temp file for insertion
   local content_file
   content_file=$(mktemp)
   echo "" >> "$content_file"
   echo "$content" >> "$content_file"
 
-  # Insert content after the section heading using sed
   local tmpfile="$dest.tmp"
   local escaped_section
   escaped_section=$(echo "$section" | sed 's/[\/&]/\\&/g')
@@ -133,26 +133,17 @@ EOF
   log "Merged $(basename "$src") → $2 ($section)"
 }
 
-sync_source() {
+sync_mapped() {
   local source_dir="$1"
-  if [[ ! -d "$source_dir" ]]; then
-    log "Skipping $source_dir (not found)"
-    return
-  fi
-
-  log "Syncing from $source_dir"
+  [[ -d "$source_dir" ]] || { log "Skipping $source_dir (not found)"; return; }
+  log "Syncing (map) from $source_dir"
 
   for src_file in "$source_dir"/*.md; do
     [[ -f "$src_file" ]] || continue
-    local basename
+    local basename mapping
     basename=$(basename "$src_file")
-    local mapping
     mapping=$(get_mapping "$basename")
-
-    if [[ -z "$mapping" ]]; then
-      log "  No mapping for $basename, skipping"
-      continue
-    fi
+    [[ -n "$mapping" ]] || { log "  No mapping for $basename, skipping"; continue; }
 
     local dest_path strategy section
     dest_path=$(echo "$mapping" | cut -d: -f1)
@@ -162,53 +153,35 @@ sync_source() {
     case "$strategy" in
       copy) sync_file_copy "$src_file" "$dest_path" ;;
       merge-sections) sync_file_merge_sections "$src_file" "$dest_path" "$section" ;;
-      *) log "  Unknown strategy '$strategy' for $basename" ;;
     esac
   done
 }
 
-sync_domain() {
-  local name="$1" source_dir="$2"
-  local dest_dir="$KNOWLEDGE_DIR/$name"
-
-  if [[ ! -d "$source_dir" ]]; then
-    log "Skipping domain '$name' — $source_dir not found"
-    return
-  fi
-
-  log "Syncing domain '$name' from $source_dir"
+sync_mirror() {
+  local name="$1" source_dir="$2" dest_dir="$SOUL_DIR/$3"
+  [[ -d "$source_dir" ]] || { log "Skipping domain '$name' — $source_dir not found"; return; }
+  log "Syncing domain '$name' (mirror) from $source_dir"
 
   if $DRY_RUN; then
     local count
     count=$(find "$source_dir" -name "*.md" | wc -l | tr -d ' ')
-    log "[dry-run] Would mirror $count files → knowledge/$name/"
+    log "[dry-run] Would mirror $count files → $3/"
     return
   fi
 
   mkdir -p "$dest_dir"
   rsync -a --delete --include='*.md' --include='*/' --exclude='*' "$source_dir/" "$dest_dir/"
-  log "Mirrored domain '$name' → knowledge/$name/"
+  log "Mirrored domain '$name' → $3/"
 }
 
 do_commit() {
-  if ! $AUTO_COMMIT; then return; fi
+  $AUTO_COMMIT || return
   if $DRY_RUN; then log "[dry-run] Would commit changes"; return; fi
-
   cd "$SOUL_DIR"
-  if [[ ! -d .git ]]; then
-    log "Soul dir is not a git repo, skipping commit"
-    return
-  fi
-
-  if git diff --quiet && git diff --cached --quiet; then
-    log "No changes to commit"
-    return
-  fi
-
-  local timestamp
-  timestamp=$(date +%Y-%m-%d)
+  [[ -d .git ]] || { log "Not a git repo, skipping commit"; return; }
+  if git diff --quiet && git diff --cached --quiet; then log "No changes to commit"; return; fi
   git add -A
-  git commit -m "soul: sync knowledge $timestamp" --quiet
+  git commit -m "soul: sync knowledge $(date +%Y-%m-%d)" --quiet
   log "Committed changes"
 }
 
@@ -216,16 +189,21 @@ do_commit() {
 
 ensure_dirs
 
-for source in "${AGENT_SOURCES[@]}"; do
-  sync_source "$source"
-done
+DOMAINS_JSON=$(parse_config)
 
-for domain_spec in "${DOMAINS[@]}"; do
-  domain_name=$(echo "$domain_spec" | cut -d: -f1)
-  domain_path=$(echo "$domain_spec" | cut -d: -f2-)
-  sync_domain "$domain_name" "$domain_path"
+# Process each domain from config
+echo "$DOMAINS_JSON" | python3 -c "
+import json, sys
+domains = json.load(sys.stdin)
+for name, d in domains.items():
+    print(f\"{name}\t{d['source']}\t{d['dest']}\t{d['strategy']}\")
+" | while IFS=$'\t' read -r name source dest strategy; do
+  case "$strategy" in
+    map) sync_mapped "$source" ;;
+    mirror) sync_mirror "$name" "$source" "$dest" ;;
+    *) log "Unknown strategy '$strategy' for domain '$name'" ;;
+  esac
 done
 
 do_commit
-
 log "Done."

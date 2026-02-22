@@ -13,6 +13,23 @@ knowledge:
   # Path to knowledge files. The provider indexes this directory.
   path: ./knowledge
 
+  # Knowledge domains — separate areas of knowledge with their own structure.
+  # The general domain uses file mapping (lessons→learning.md, etc.).
+  # Named domains use mirror strategy (copy full directory tree) by default.
+  domains: {}
+    # general:
+    #   source: ~/.agent/knowledge/memories
+    #   dest: ./knowledge
+    #   strategy: map          # use file mapping rules
+    # sales:
+    #   source: ~/.agent/knowledge/sales
+    #   dest: ./knowledge/sales
+    #   strategy: mirror       # copy entire directory tree
+    # career:
+    #   source: ~/.agent/knowledge/career
+    #   dest: ./knowledge/career
+    #   strategy: mirror
+
   # Provider-specific configuration
   config: {}
     # kiro-cli: no additional config needed (uses built-in knowledge tool)

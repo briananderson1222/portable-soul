@@ -190,6 +190,59 @@ Career Knowledge and Index entries are **never compacted or auto-pruned**. The a
 
 ---
 
+## Knowledge Domains
+
+Knowledge can be organized into separate domains for different areas of work. Each domain is a subdirectory under `knowledge/` with its own files and structure.
+
+```
+knowledge/
+├── memory.md               ← Default/general knowledge
+├── learning.md
+├── continuity.md
+├── followups.md
+├── bookmarks.md
+├── sales/                  ← Domain: sales
+│   ├── activities/
+│   ├── contacts.md
+│   ├── insights/
+│   └── plans.md
+├── career/                 ← Domain: career
+│   ├── highlights.md
+│   └── growth.md
+└── skills/                 ← Domain: skills
+    └── certifications.md
+```
+
+### Domain rules
+
+- The root `knowledge/` files (memory, learning, continuity, followups, bookmarks) are the **general domain** — they follow the three-tier model and extension specs defined above.
+- Subdirectories are **named domains** with their own structure. The spec does not prescribe their internal format — domains are free-form to match the needs of the area.
+- Each domain can have its own files, subdirectories, and conventions.
+- The knowledge provider searches across all domains by default. Domain-scoped queries can be directed to a specific subdirectory.
+- Domains are declared in `soul.config.yml` under `knowledge.domains` so the sync tool knows where to find and place them.
+- The three-tier memory model (index, working, career) applies to the general domain. Named domains manage their own lifecycle.
+
+### Sync with domains
+
+The sync tool maps agent knowledge directories to soul domains:
+
+```yaml
+# In soul.config.yml
+knowledge:
+  domains:
+    general:
+      source: ~/.agent/knowledge/memories
+      dest: ./knowledge
+    sales:
+      source: ~/.agent/knowledge/sales
+      dest: ./knowledge/sales
+      strategy: mirror    # copy entire directory tree
+```
+
+The `mirror` strategy copies the full directory structure. The `map` strategy (default for general) uses the file mapping rules.
+
+---
+
 ## Capture Policy
 
 ### Index freely, capture carefully

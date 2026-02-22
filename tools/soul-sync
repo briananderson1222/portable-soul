@@ -2,10 +2,11 @@
 # soul-sync — Extract knowledge from agent runtimes into the portable soul repo
 #
 # Usage:
-#   soul-sync                    # Sync from default sources
-#   soul-sync --dry-run          # Show what would change without writing
-#   soul-sync --commit           # Sync and auto-commit
-#   soul-sync --source /path     # Sync from a specific knowledge directory
+#   soul-sync                          # Sync from default sources
+#   soul-sync --dry-run                # Show what would change without writing
+#   soul-sync --commit                 # Sync and auto-commit
+#   soul-sync --source /path           # Sync general knowledge from a specific directory
+#   soul-sync --domain sales /path     # Mirror a domain directory
 
 set -euo pipefail
 
@@ -24,6 +25,7 @@ AGENT_SOURCES=(
 DRY_RUN=false
 AUTO_COMMIT=false
 CUSTOM_SOURCE=""
+DOMAINS=()  # pairs of "name:source_path"
 
 # --- Parse args ---
 
@@ -32,6 +34,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=true; shift ;;
     --commit) AUTO_COMMIT=true; shift ;;
     --source) CUSTOM_SOURCE="$2"; shift 2 ;;
+    --domain) DOMAINS+=("$2:$3"); shift 3 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
 done
@@ -164,6 +167,29 @@ sync_source() {
   done
 }
 
+sync_domain() {
+  local name="$1" source_dir="$2"
+  local dest_dir="$KNOWLEDGE_DIR/$name"
+
+  if [[ ! -d "$source_dir" ]]; then
+    log "Skipping domain '$name' — $source_dir not found"
+    return
+  fi
+
+  log "Syncing domain '$name' from $source_dir"
+
+  if $DRY_RUN; then
+    local count
+    count=$(find "$source_dir" -name "*.md" | wc -l | tr -d ' ')
+    log "[dry-run] Would mirror $count files → knowledge/$name/"
+    return
+  fi
+
+  mkdir -p "$dest_dir"
+  rsync -a --delete --include='*.md' --include='*/' --exclude='*' "$source_dir/" "$dest_dir/"
+  log "Mirrored domain '$name' → knowledge/$name/"
+}
+
 do_commit() {
   if ! $AUTO_COMMIT; then return; fi
   if $DRY_RUN; then log "[dry-run] Would commit changes"; return; fi
@@ -192,6 +218,12 @@ ensure_dirs
 
 for source in "${AGENT_SOURCES[@]}"; do
   sync_source "$source"
+done
+
+for domain_spec in "${DOMAINS[@]}"; do
+  domain_name=$(echo "$domain_spec" | cut -d: -f1)
+  domain_path=$(echo "$domain_spec" | cut -d: -f2-)
+  sync_domain "$domain_name" "$domain_path"
 done
 
 do_commit

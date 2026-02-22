@@ -22,6 +22,7 @@ Read this file first. Follow its instructions precisely.
 | `continuity.md` | Session management: registry, handoffs, wind-down | Dynamic (auto-expires) | Extension |
 | `followups.md` | Action items: explicit-intent-only, tagged | Dynamic | Extension |
 | `bookmarks.md` | Reference links: categorized, persistent | Semi-stable | Extension |
+| `journal/` | Daily session logs: raw capture, curated over time | Dynamic (auto-expires) | Extension |
 
 ---
 
@@ -404,6 +405,59 @@ When approaching end of day, casually offer to save context. If accepted, update
 **When NOT to add:** Every link in conversation. Links discovered during research. Links findable through source systems.
 
 **On session start:** Don't read out bookmarks. Search only when the user asks for a link.
+
+### journal/ (daily logs)
+
+**Purpose:** Raw capture of notable events, conversations, and context from each session. The unfiltered record that gets curated into lessons, preferences, and decisions over time.
+
+**File format:** One file per day: `journal/YYYY-MM-DD.md`
+
+```markdown
+# YYYY-MM-DD
+
+## Session: topic-name
+- What was worked on
+- Key context, decisions made, problems encountered
+- Links to artifacts created
+
+## Session: another-topic
+- ...
+```
+
+**When to write:** At the end of each session (or during, for long sessions). Capture what happened, not just what was decided. Include context that might be useful for future curation.
+
+**Relationship to learning files:** Journal entries are raw material. When a pattern emerges across multiple journal entries — a recurring lesson, a confirmed preference, a solidified decision — curate it into the appropriate learning file. The journal captures; the learning files distill.
+
+**Pruning:** Journal entries are Tier 2 (working memory). Entries older than 30 days can be pruned unless flagged as notable. The curated insights in learning files are what persist long-term.
+
+**Context metadata:** When using a search provider that supports collection context (e.g., qmd), add descriptive context to help search understand what's in the journal vs. other domains.
+
+---
+
+## Knowledge Domain Context
+
+Each knowledge domain can have a `context` description in `soul.config.yml`. This metadata serves two purposes:
+
+1. **For humans:** Documents what each domain contains at a glance.
+2. **For search providers:** Improves retrieval relevance. Providers like qmd use context to understand which collection is most likely to contain relevant results.
+
+```yaml
+domains:
+  general:
+    dest: ./knowledge
+    context: "Personal knowledge: lessons, preferences, decisions, sessions"
+  sales:
+    dest: ./knowledge/sales
+    context: "Sales: activities, contacts, insights, team feedback"
+  journal:
+    dest: ./knowledge/journal
+    context: "Daily session logs: raw capture of notable events"
+```
+
+When setting up a search provider, map domain contexts to the provider's metadata system:
+- **qmd:** `qmd context add qmd://<collection> "<context>"`
+- **kiro-cli:** Context is implicit in the knowledge base name/description
+- **file:** Context is documentation only (no search metadata)
 
 ---
 

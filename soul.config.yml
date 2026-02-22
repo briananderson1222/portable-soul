@@ -16,16 +16,20 @@ knowledge:
   # Knowledge domains — separate areas of knowledge with their own structure.
   # Each domain maps an agent runtime directory to a soul repo directory.
   # Sync is bidirectional: rsync --update (newer file wins).
+  # Context descriptions improve search relevance (used by qmd context add).
   domains: {}
     # general:
     #   source: ~/.agent/knowledge/memories
     #   dest: ./knowledge
+    #   context: "Personal knowledge: lessons, preferences, decisions, sessions"
     # sales:
     #   source: ~/.agent/knowledge/sales
     #   dest: ./knowledge/sales
-    # career:
-    #   source: ~/.agent/knowledge/career
-    #   dest: ./knowledge/career
+    #   context: "Sales: activities, contacts, insights, team feedback"
+    # journal:
+    #   source: ~/.agent/knowledge/journal
+    #   dest: ./knowledge/journal
+    #   context: "Daily session logs: raw capture of notable events"
 
   # Provider-specific configuration
   config: {}

@@ -35,19 +35,62 @@ After writing to knowledge files, update the knowledge index.
 
 ### `qmd` — Local hybrid search (BM25 + vectors + LLM reranking)
 
-Uses [qmd](https://github.com/tobi/qmd) for high-quality local search over markdown files.
+Uses [qmd](https://github.com/tobi/qmd) for high-quality local search over markdown files. Combines BM25 full-text search, vector semantic search, and LLM re-ranking — all running locally.
 
-**Search:** `qmd search "<query>" --index soul --json` via bash
-**Read:** `fs_read` for specific files
-**Write:** `fs_write` to knowledge files (qmd auto-indexes on next search or via `qmd index`)
-**Index:** `qmd index ~/.soul/knowledge --name soul`
+**Setup:**
+```bash
+# Install
+npm install -g @tobilu/qmd
 
-**Orchestrator instructions:**
+# Create collections from soul knowledge domains
+qmd collection add ~/.soul/knowledge --name soul
+qmd collection add ~/.soul/knowledge/sales --name soul-sales
+qmd collection add ~/.soul/knowledge/journal --name soul-journal
+
+# Add context metadata (from soul.config.yml domain contexts)
+qmd context add qmd://soul "Personal knowledge: lessons, preferences, decisions, sessions"
+qmd context add qmd://soul-sales "Sales: activities, contacts, insights, team feedback"
+qmd context add qmd://soul-journal "Daily session logs: raw capture of notable events"
+
+# Generate embeddings
+qmd embed
 ```
-Search knowledge using: qmd search "<query>" --index soul --json
-Parse JSON results for file paths and relevant snippets.
-Read specific files with fs_read when you need full context.
-After significant writes, run: qmd index ~/.soul/knowledge --name soul
+
+**Search:** Three modes depending on need:
+- `qmd search "<query>" --json` — fast BM25 keyword search
+- `qmd vsearch "<query>" --json` — semantic vector search
+- `qmd query "<query>" --json` — hybrid + query expansion + LLM reranking (best quality)
+
+**Read:** `qmd get <path>` or `fs_read` for full file content
+**Write:** `fs_write` to knowledge files, then `qmd update` to re-index
+**Index:** `qmd embed` for vectors, `qmd update` for full re-index
+
+**MCP server (recommended):**
+
+QMD exposes an MCP server that any MCP-compatible agent can use directly:
+
+```json
+{
+  "mcpServers": {
+    "qmd": {
+      "command": "qmd",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Tools exposed: `qmd_search`, `qmd_vector_search`, `qmd_deep_search`, `qmd_get`, `qmd_multi_get`, `qmd_status`. When using the MCP server, no provider-specific orchestrator instructions are needed — the agent discovers and uses the tools natively.
+
+**Collection-scoped search:**
+```bash
+qmd search "quarterly planning" -c soul-sales    # search only sales domain
+qmd query "lessons learned" -c soul              # search only general knowledge
+```
+
+**After sync:** Run `qmd update` after `soul-sync` to re-index changed files. Can be chained:
+```bash
+soul-sync --commit && qmd update
 ```
 
 ### `file` — Plain file reads (lowest common denominator)

@@ -248,48 +248,54 @@ Reverse sync (`soul-sync --reverse`): copies newer files from soul repo → agen
 
 ## Capture Policy
 
-### Index freely, capture carefully
+Capture is continuous, not end-of-session. Session boundaries are unreliable — the user may close the terminal, the context window may truncate, the agent may crash. Write as things happen, not after.
 
-Index entries (Tier 1) flow automatically after artifact creation. No prompting, no justification.
+### Capture timing
 
-Career knowledge (Tier 3) requires the **future value test**:
-- What realistic query would surface this entry?
-- Would future-me benefit from finding this?
-- Does this context exist in any single source system, or is it synthesis?
+**Immediate (write now, during the conversation):**
+- User says "remember this", "save this", "TODO", "don't forget" → write to the target file immediately
+- User corrects a fact or preference → update the relevant file immediately
+- An artifact is created in an external system (email sent, ticket filed, document saved) → write an index entry immediately
+- User confirms an architectural decision → write to `decisions.md` immediately
 
-### Don't copy records — index them
+**Continuous (append to today's journal as notable things occur):**
+- A non-trivial problem was debugged and solved → journal entry with problem + fix
+- A design trade-off was discussed (even if not yet decided) → journal entry with context
+- New stakeholder or relationship context surfaced → journal entry
+- A workflow or tool behaved unexpectedly → journal entry
+- Context that would be lost if the session ended now → journal entry
 
-The knowledge base should never contain the full text of a source record. Store:
-- A one-line summary of what happened
-- The date and topic
-- A direct link to the source
+**Background (scheduled job catches what slipped through):**
+- Process telemetry or conversation logs for missed capture signals
+- Detect patterns across multiple journal entries → curate into lessons/preferences/decisions
+- Flag stale sessions, overdue followups, decayed memory
+- Compact or prune working memory per lifecycle rules
 
-### Justify before offering
+### Signal classes
 
-When context qualifies as career knowledge, proactively surface it with a brief explanation of why it's worth saving. The user may not think to ask, but if the justification is clear, they'll learn what the system values.
+When evaluating whether something is worth capturing, classify it:
 
-Good: "This discussion surfaced a design trade-off between X and Y that isn't documented anywhere — the rationale for choosing X was performance under concurrent load. Want me to save that to your decisions?"
+| Signal | Target file | Confidence needed | Example |
+|---|---|---|---|
+| User explicitly asks to save | Whatever they specify | None — just do it | "Remember that Acme prefers REST over GraphQL" |
+| User corrects agent behavior | `preferences.md` | High — they said it | "No, use tabs not spaces" |
+| Artifact created in external system | Index entry in `memory.md` | None — auto-write | Email sent, CR filed, ticket created |
+| Something failed and was debugged | `lessons.md` | High — it happened | "brazil vs recreate wipes VS with no targets" |
+| Architectural choice confirmed | `decisions.md` | High — user confirmed | "We're going with DynamoDB over Aurora" |
+| Preference inferred from single observation | Nothing yet | Wait for repetition | User used bullet points once |
+| Preference confirmed by repetition or statement | `preferences.md` | Medium — pattern seen | User always asks for concise responses |
+| Notable event worth future reference | `journal/YYYY-MM-DD.md` | Low — just capture it | "Discussed migration timeline with CTO" |
+| Deferred decision or open question | `journal/YYYY-MM-DD.md` | Low — raw capture | "Still deciding between Lambda and ECS" |
+| Action item the user didn't explicitly ask to track | Nothing | Don't infer TODOs | Agent noticed a deadline was mentioned |
 
-Bad: "Want me to save this to your knowledge base?"
+### Rules
 
-If you can't articulate a clear reason, don't offer. If you can, do — proactively.
-
-### Explicit intent for followups
-
-Only save followups when the user explicitly signals intent:
-- "Remind me to...", "TODO", "Don't let me forget", "Save this"
-
-Do NOT save:
-- Perceived action items from context
-- Deferred decisions the agent noticed
-- Links that came up naturally
-
-### Reduce capture friction
-
-- Auto-write index entries silently after artifact creation
-- Auto-capture user corrections at high confidence
-- Proactively propose career knowledge with justification
-- Skip the offer when nothing novel emerged
+- **Index freely, capture carefully.** Index entries (Tier 1) flow automatically. Career knowledge (Tier 3) requires the signal to be high-confidence.
+- **Don't copy records — index them.** Store a one-line summary + link, not the full record.
+- **Justify before offering.** When proposing to save career knowledge, state why it has future value. If you can't articulate a reason, don't offer.
+- **Explicit intent for followups.** Only track action items when the user explicitly asks.
+- **Journal is cheap, learning files are expensive.** When in doubt, write to the journal. Curate into learning files only when a pattern is confirmed.
+- **Never depend on session end.** If something matters, write it now. There may not be a "later."
 
 ---
 
@@ -424,7 +430,7 @@ When approaching end of day, casually offer to save context. If accepted, update
 - ...
 ```
 
-**When to write:** At the end of each session (or during, for long sessions). Capture what happened, not just what was decided. Include context that might be useful for future curation.
+**When to write:** During the session, as notable things occur. Do not wait for session end — there may not be one. Append to today's file whenever context would be lost if the session ended now.
 
 **Relationship to learning files:** Journal entries are raw material. When a pattern emerges across multiple journal entries — a recurring lesson, a confirmed preference, a solidified decision — curate it into the appropriate learning file. The journal captures; the learning files distill.
 

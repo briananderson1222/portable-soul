@@ -44,6 +44,31 @@ knowledge:
     #   search_command: "my-search-tool query {query} --path {path}"
     #   index_command: "my-search-tool index {path}"
 
+# Vault — how knowledge files are authored and organized.
+# Determines what markdown features the orchestrator can use.
+vault:
+  # Provider: plain (default), obsidian, logseq, dendron
+  provider: plain
+
+  # Vault root (for editors that need it). Defaults to soul_path.
+  # path: ~/.soul
+
+  # Features available when provider != plain.
+  # The orchestrator adapts its writing instructions based on these.
+  # features:
+  #   - wikilinks        # [[link]] syntax for connecting entries
+  #   - frontmatter      # YAML frontmatter for metadata (tags, date, type)
+  #   - tags             # #tag inline tags
+  #   - daily-notes      # Auto-creates journal/YYYY-MM-DD.md
+  #   - backlinks        # Bidirectional link graph
+
+  # Obsidian-specific
+  # daily_notes_path: knowledge/journal    # Maps daily notes → journal dir
+  # gitignore:
+  #   - .obsidian/workspace.json
+  #   - .obsidian/workspace-mobile.json
+  #   - .trash/
+
 # Sync — how changes to the soul repo are persisted
 sync:
   # auto_commit: Automatically commit knowledge changes

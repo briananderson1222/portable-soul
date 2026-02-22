@@ -151,3 +151,78 @@ To add a new provider:
 2. Add the provider name to the supported list in `soul.config.yml`
 3. Add orchestrator instructions that the soul-protocol.md can reference
 4. Test with both the minimal and full templates
+
+---
+
+## Vault Providers
+
+Vault providers determine how knowledge files are authored and organized. They control what markdown features the orchestrator can use when writing entries.
+
+### Interface
+
+| Capability | Description |
+|---|---|
+| `wikilinks` | `[[link]]` syntax for connecting related entries |
+| `frontmatter` | YAML frontmatter for metadata (tags, date, type) |
+| `tags` | `#tag` inline tags for categorization |
+| `daily-notes` | Auto-creates dated files for journal entries |
+| `backlinks` | Bidirectional link graph for discovery |
+
+### `plain` (default)
+
+Standard markdown. No special syntax. Works everywhere.
+
+**Writing rules:**
+- Use standard markdown headings, lists, and links
+- Reference other files by name in prose: "see decisions.md"
+- No frontmatter unless the file template includes it
+
+### `obsidian`
+
+[Obsidian](https://obsidian.md) vault. Enables rich linking, metadata, and graph navigation.
+
+**Features:** wikilinks, frontmatter, tags, daily-notes, backlinks
+
+**Setup:**
+1. Open Obsidian → "Open folder as vault" → select the soul repo root
+2. Configure daily notes plugin: folder = `knowledge/journal`, format = `YYYY-MM-DD`
+3. Add `.obsidian/` to `.gitignore` (workspace state is local, not portable)
+
+**Writing rules (when features are enabled):**
+
+- **Frontmatter:** Add YAML frontmatter to entries that benefit from metadata:
+  ```yaml
+  ---
+  date: 2026-02-22
+  tags: [architecture, decision]
+  type: decision
+  ---
+  ```
+- **Wikilinks:** Connect related entries with `[[filename]]` or `[[filename#heading]]`:
+  ```markdown
+  - Decided on bidirectional sync — see [[decisions#bidirectional-sync]]
+  - Related lesson: [[lessons#bash-compat]]
+  ```
+- **Tags:** Use inline `#tags` for categorization beyond frontmatter:
+  ```markdown
+  - #project/portable-soul — chose rsync over custom merge
+  - #account/acme — prefers REST over GraphQL
+  ```
+- **Daily notes:** Journal entries use Obsidian's daily notes format. The daily notes plugin auto-creates `knowledge/journal/YYYY-MM-DD.md`.
+- **Backlinks:** When writing a new entry, link to related existing entries. Obsidian's backlink panel makes these connections discoverable.
+
+**What stays portable:** Wikilinks and frontmatter are valid markdown — other tools just ignore the `[[]]` syntax and `---` blocks. QMD indexes the content regardless. The vault features add navigability for humans without breaking machine readability.
+
+### `logseq`
+
+[Logseq](https://logseq.com) — outliner-based. Similar to Obsidian but block-oriented.
+
+**Features:** wikilinks, frontmatter, tags, daily-notes, backlinks
+
+**Notes:** Logseq uses a block-reference model (`((block-id))`) that is less portable than Obsidian's file-based links. Use wikilinks for cross-file references, avoid block references in knowledge files that need to be agent-readable.
+
+### Adding a vault provider
+
+1. Add a section to this file describing the provider's features and writing rules
+2. Add the provider name to `soul.config.yml`
+3. The orchestrator reads the declared features and adapts its writing instructions

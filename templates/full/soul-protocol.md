@@ -472,6 +472,58 @@ When setting up a search provider, map domain contexts to the provider's metadat
 
 ---
 
+## Vault-Aware Writing
+
+The `vault` section in `soul.config.yml` declares what markdown features are available. The orchestrator adapts its writing style based on declared features. If no vault is configured, default to `plain` (standard markdown).
+
+### Plain mode (default)
+
+- Standard markdown: headings, lists, links, code blocks
+- Reference other files by name in prose: "see decisions.md"
+- No frontmatter unless the file template includes it
+- Entry format: `- **YYYY-MM-DD**: Description`
+
+### When `wikilinks` is enabled
+
+Connect related entries across files:
+- Link to files: `[[decisions]]`, `[[lessons]]`
+- Link to specific entries: `[[decisions#bidirectional-sync]]`
+- Link from journal to learning: `[[lessons#bash-compat|bash 3.2 lesson]]`
+
+Use wikilinks when an entry references context in another file. Don't over-link — link when the connection adds navigability.
+
+### When `frontmatter` is enabled
+
+Add YAML frontmatter to entries that benefit from structured metadata:
+```yaml
+---
+date: 2026-02-22
+tags: [architecture, decision]
+type: decision
+---
+```
+
+Use frontmatter on journal entries and career knowledge. Skip it on index entries and working memory (too transient to warrant metadata).
+
+### When `tags` is enabled
+
+Use inline `#tags` for categorization:
+- `#project/portable-soul` — project scope
+- `#account/acme` — account scope
+- `#type/lesson`, `#type/decision` — entry type
+
+Tags complement frontmatter tags. Use inline tags for quick categorization in lists; use frontmatter tags for structured queries.
+
+### When `daily-notes` is enabled
+
+Journal entries use the vault's daily notes format. The daily notes plugin auto-creates `knowledge/journal/YYYY-MM-DD.md`. Write session entries as sections within the daily note.
+
+### Feature detection
+
+Read the vault configuration from `soul.config.yml` at session start. If `vault.provider` is `plain` or absent, use standard markdown only. If features are declared, use them. Never use vault-specific syntax that isn't declared — it won't render correctly in other tools.
+
+---
+
 ## File Updates
 
 All modifications use the canonical envelope:

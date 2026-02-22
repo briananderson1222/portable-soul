@@ -140,7 +140,7 @@ Ephemeral session context that auto-expires.
 
 ### Tier 3 — Career Knowledge
 
-High-signal context that matters long-term. Stored in the Career Knowledge section of `memory.md` and in `learning.md`.
+High-signal context that matters long-term. Stored in the Career Knowledge section of `memory.md` and in `lessons.md`, `preferences.md`, `decisions.md`.
 
 **What qualifies:**
 - Key wins and technical leadership moments
@@ -200,10 +200,15 @@ Knowledge can be organized into separate domains for different areas of work. Ea
 ```
 knowledge/
 ├── memory.md               ← Default/general knowledge
-├── learning.md
+├── lessons.md
+├── preferences.md
+├── decisions.md
 ├── continuity.md
+├── sessions.md
 ├── followups.md
 ├── bookmarks.md
+├── journal/                ← Daily session logs
+│   └── YYYY-MM-DD.md
 ├── sales/                  ← Domain: sales
 │   ├── activities/
 │   ├── contacts.md

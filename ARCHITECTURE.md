@@ -210,6 +210,12 @@ After integration, responsibilities split cleanly:
 
 The soul is who you are. The agent framework is what you can do. They compose.
 
+### Vault-aware writing
+
+The `vault` section in `soul.config.yml` declares what markdown features are available. When a vault provider like Obsidian is configured, the orchestrator adapts its writing instructions — using `[[wikilinks]]` to connect entries, YAML frontmatter for metadata, and `#tags` for categorization. When no vault is configured (or `plain` is declared), agents write standard markdown.
+
+This means the same soul works in Obsidian (rich graph navigation) and in a plain text editor (maximum portability). The vault features are additive — they enhance navigability for humans without breaking machine readability.
+
 ## Comparison with Soul Protocol
 
 Portable Soul is built on Soul Protocol's foundation. The core architecture (orchestrator, six files, capability-aware modes, conflict resolution, update envelope) is adapted from Soul Protocol with attribution.
@@ -218,10 +224,15 @@ Portable Soul is built on Soul Protocol's foundation. The core architecture (orc
 - Three-tier memory model (Index / Working / Career)
 - Self-learning framework (lessons, preferences, decisions)
 - Session continuity (registry, handoffs, EOD wind-down)
-- Proactive capture with justification
+- Concrete capture policy (signal classes, timing tiers, never depend on session end)
 - Future value test for career knowledge
 - Multi-year context awareness (no age-based pruning)
 - Source system indexing (pointers, not copies)
+- Knowledge domains (namespaced areas with context metadata)
+- Daily journal for raw session capture
+- Pluggable knowledge providers (QMD, kiro-cli, Mem0, file, custom)
+- Vault-aware writing (Obsidian, Logseq, plain)
+- Bidirectional sync tool (config-driven, rsync-based)
 - Followups and bookmarks as first-class extensions
 - Explicit-intent-only capture for action items
 

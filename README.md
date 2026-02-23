@@ -179,7 +179,13 @@ portable-soul/
 
 Portable Soul builds directly on [Soul Protocol](https://soul-protocol.com/) by Luis H. Garcia, which defined the foundational architecture of portable AI identity using Markdown files. The orchestrator design, capability-aware modes, conflict resolution hierarchy, and update envelope format are adapted from Soul Protocol's specification.
 
-The concept of soul files for AI agents was pioneered by [OpenClaw](https://www.openclaw.ai).
+The concept of soul files for AI agents was pioneered by [OpenClaw](https://www.openclaw.ai). The capture policy and daily journal pattern draw from OpenClaw's memory architecture.
+
+The knowledge search layer is powered by [QMD](https://github.com/tobi/qmd) by Tobi Lütke — a local hybrid search engine combining BM25, vector embeddings, and LLM reranking for markdown files.
+
+The vault-aware writing system is designed for use with [Obsidian](https://obsidian.md), enabling wikilinks, frontmatter, tags, and knowledge graph navigation across soul files.
+
+[memspan](https://github.com/ericblue/memspan) by Eric Blue informed the file-first, portable memory philosophy — identity continuity across AI tools without infrastructure dependencies.
 
 ## License
 

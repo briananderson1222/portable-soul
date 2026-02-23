@@ -62,10 +62,11 @@ The extended orchestrator also upgrades memory from two tiers to three:
 
 ### Full (agent runtimes)
 
-1. Copy `templates/full/` to your working directory
+1. Copy `templates/full/` to your soul directory (e.g., `~/.soul/`)
 2. Fill in the core files (identity, soul, user, system)
-3. Configure `system.md` with your runtime's capabilities
-4. The orchestrator activates extensions based on declared capabilities
+3. Configure `soul.config.yml` with your knowledge provider, domains, and vault
+4. Run `soul-sync` to populate knowledge from your agent runtime
+5. The orchestrator loads extensions automatically when the files exist
 
 ## What Makes This Different
 
@@ -103,26 +104,57 @@ The soul protocol defines what operations are needed (search, read, write). The 
 knowledge:
   provider: qmd        # or: kiro-cli, file, mem0, custom
   path: ./knowledge
+
+  domains:
+    general:
+      source: ~/.agent/knowledge/memories
+      dest: ./knowledge
+      context: "Personal knowledge: lessons, preferences, decisions"
+    sales:
+      source: ~/.agent/knowledge/sales
+      dest: ./knowledge/sales
+      context: "Sales: activities, contacts, insights"
 ```
 
 Supported providers:
 - **kiro-cli** — built-in semantic search via MiniLLM
-- **qmd** — local hybrid search (BM25 + vectors + LLM reranking)
+- **qmd** — local hybrid search (BM25 + vectors + LLM reranking), MCP server included
 - **file** — plain file reads + grep (works everywhere)
 - **mem0** — Mem0 OpenMemory MCP server
 - **custom** — your own search/index commands
 
-See `providers/README.md` for the full interface spec.
+## Vault-Aware Writing
+
+The soul adapts its writing style based on the declared vault provider:
+
+```yaml
+vault:
+  provider: obsidian    # or: plain, logseq
+  features: [wikilinks, frontmatter, tags, daily-notes, backlinks]
+```
+
+With `plain` (default), agents write standard markdown. With `obsidian`, agents use `[[wikilinks]]` to connect entries, YAML frontmatter for metadata, and `#tags` for categorization — building a navigable knowledge graph over time.
+
+See `providers/README.md` for the full provider and vault interface specs.
 
 ## Integration with Agent Frameworks
 
-The soul repo (`~/.soul/`) is the source of truth. Agent frameworks consume it:
+The soul repo (`~/.soul/`) is the source of truth. Agent frameworks integrate via sync:
 
-- **Agent frameworks** — bridge file loads soul from `~/.soul/`, knowledge dir symlinked or synced
+```bash
+soul-sync              # Forward: agent runtime → soul repo (newer wins)
+soul-sync --reverse    # Reverse: soul repo → agent runtime (newer wins)
+soul-sync --commit     # Forward + auto-commit to soul repo
+```
+
+All sync is bidirectional `rsync --update` — same file format on both sides, no translation. Sources and domains are configured in `soul.config.yml`.
+
+Integration patterns:
+- **Agent frameworks** — pre-build sync copies `soul-protocol.md` into the framework's context. Knowledge syncs bidirectionally via `soul-sync`.
+- **Obsidian** — open `~/.soul/` as a vault. Browse, edit, and curate knowledge. Daily notes map to `journal/YYYY-MM-DD.md`.
+- **QMD** — index soul knowledge as collections. Agents search via MCP server or CLI.
 - **Cursor / Copilot** — export core files to `.cursorrules` or `copilot-instructions.md`
 - **Claude / ChatGPT** — paste minimal template files as context, use update envelopes
-
-See `ARCHITECTURE.md` for the full integration model.
 
 ## Project Structure
 

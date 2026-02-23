@@ -69,17 +69,21 @@ The extended orchestrator also upgrades memory from two tiers to three:
 
 ## What Makes This Different
 
-| | Portable Soul | Soul Protocol | OpenClaw SOUL.md | Mem0 / Letta |
-|---|---|---|---|---|
-| Portable across LLMs | ✅ | ✅ | ❌ (OpenClaw only) | ❌ (platform-specific) |
-| Memory tiers | 3 (index/working/career) | 2 (working/archive) | 2 (daily/curated) | Runtime-dependent |
-| Self-learning framework | ✅ | ❌ | ❌ | Partial |
-| Session continuity | ✅ | Philosophical only | ❌ | ❌ |
-| Capture discipline | Justify before saving | Save after meaningful interaction | Informal | Automatic |
-| Multi-year context | ✅ (age ≠ staleness) | ❌ (90-day decay) | ❌ | ❌ |
-| Source system indexing | ✅ (pointers, not copies) | ❌ | ❌ | ❌ |
-| Conflict resolution | 7-level hierarchy | 7-level hierarchy | Implicit | N/A |
-| Pure spec (no runtime) | ✅ | ✅ | ❌ | ❌ |
+Most approaches to AI memory and identity are either locked to a platform (Mem0, Letta) or limited to personality without operational depth (OpenClaw SOUL.md, Soul Protocol).
+
+Portable Soul combines portability with professional-grade memory:
+
+- **Three-tier memory** — index entries (auto-written pointers to source systems), working memory (session context, auto-expires), and career knowledge (long-lived, requires justification, never auto-pruned)
+- **Capture discipline** — concrete signal classes and timing tiers (immediate, continuous, background) instead of vague "save what matters" rules. Never depends on session end.
+- **Bidirectional sync** — same file format on both sides, `rsync --update` (newer wins), no format translation
+- **Pluggable search** — swap between kiro-cli, QMD (BM25 + vectors + reranking), Mem0, or plain file reads via config
+- **Vault-aware writing** — adapts to Obsidian (wikilinks, frontmatter, tags), Logseq, or plain markdown based on declared features
+- **Knowledge domains** — separate namespaced areas (sales, career, journal) with their own structure and context metadata
+- **Self-learning** — structured lessons, preferences, and decisions with explicit when-to-add and when-NOT-to-add rules
+- **Session continuity** — registry, handoffs, EOD wind-down, automatic stale cleanup
+- **Source system indexing** — pointers back to where records live, not copies of them
+
+Built on [Soul Protocol](https://soul-protocol.com/)'s foundation (orchestrator, conflict resolution, capability-aware modes, update envelope) and inspired by [OpenClaw](https://www.openclaw.ai)'s pioneering work on agent identity files.
 
 ## Design Principles
 

@@ -1,0 +1,16 @@
+{
+  "name": "portable-soul",
+  "version": "0.1.0",
+  "description": "Portable AI identity, memory, and continuity — in plain Markdown",
+  "bin": {
+    "portable-soul": "./cli.js"
+  },
+  "files": [
+    "cli.js",
+    "cli.ps1",
+    "templates/",
+    "soul.config.yml",
+    "tools/"
+  ],
+  "license": "MIT"
+}

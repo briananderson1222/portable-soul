@@ -6,6 +6,25 @@ Portable Soul defines a structured, human-readable system that decouples who an 
 
 > Change the brain. Keep the soul. Bring the memory.
 
+## Get Started in One Command
+
+```bash
+npx portable-soul
+```
+
+The installer creates `~/.soul/` — a clean Obsidian vault and private git repo. Your identity and memory files are yours to edit. Update anytime:
+
+```bash
+npx portable-soul --update
+```
+
+On Windows without Node.js:
+
+```powershell
+.\cli.ps1              # Downloads templates from GitHub
+.\cli.ps1 -Update      # Update soul-protocol.md
+```
+
 ## The Problem
 
 Every AI assistant starts from zero. Switch models, switch tools, start a new session — your context is gone. The few systems that offer memory lock it to a single platform. There is no standard way to carry identity, accumulated knowledge, and working context across AI systems.
@@ -51,22 +70,93 @@ The extended orchestrator also upgrades memory from two tiers to three:
 - **Working Memory** — Session context, handoffs, active facts. Auto-expires.
 - **Career Knowledge** — Long-lived insights that require justification. Never auto-pruned.
 
-## Quick Start
+## Your Vault
 
-### Minimal (chat-only LLMs)
+After install, `~/.soul/` looks like this:
 
-1. Copy `templates/minimal/` to your working directory
+```
+~/.soul/                      # Obsidian vault + private git repo
+├── .git/
+├── .gitignore
+├── .obsidian/                # Obsidian config (partially gitignored)
+├── .obsidianignore
+├── .config/                  # Path management config
+│   ├── default.toml
+│   └── <hostname>.toml      # Machine-specific overrides
+├── soul-protocol.md          # SYSTEM — updated via npx
+├── soul.config.yml           # SEED — provider and vault config
+├── identity.md               # SEED → user edits
+├── soul.md                   # SEED → user edits
+├── user.md                   # SEED → user edits
+├── system.md                 # SEED → user edits
+├── memory.md                 # SEED → AI manages
+├── lessons.md                # SEED → AI appends
+├── preferences.md            # SEED → AI appends
+├── decisions.md              # SEED → AI appends
+├── continuity.md             # SEED → AI manages
+├── followups.md              # SEED → AI manages
+├── bookmarks.md              # SEED → AI manages
+└── journal/                  # DYNAMIC
+    └── README.md
+```
+
+Three file categories:
+
+| Category | On install | On update | Examples |
+|----------|-----------|-----------|---------|
+| System | Copied | Replaced | `soul-protocol.md` |
+| Seed | Copied | Only new files added | `identity.md`, `soul.md`, etc. |
+| Dynamic | Empty stub | Never touched | `journal/` |
+
+## Using Your Soul
+
+**With ChatGPT / Claude Web:**
+- Attach the 6 core files as context to your chat
+
+**With AI Agents (file access):**
+- Point them to `~/.soul/`
+- They read `soul-protocol.md` first and initialize from there
+
+**With Obsidian:**
+- Open `~/.soul/` as a vault
+- Edit, browse, and curate your knowledge graph
+
+### Path Management
+
+Soul files can be synced to external locations (e.g., `.config/claude/`, `.config/kiro/`) for use by multiple AI tools:
+
+```bash
+npx portable-soul symlinks                      # Show current path status
+npx portable-soul symlinks --sync              # Sync all configured paths
+npx portable-soul symlinks --sync --mode copy  # Use copy mode instead of symlinks
+npx portable-soul symlinks --sync --dry-run    # Preview changes without applying
+npx portable-soul symlinks --remove            # Remove all linked paths
+```
+
+Configure paths in `~/.soul/.config/default.toml`:
+
+```toml
+[paths]
+identity.md = "~/.config/claude/identity.md"
+memory.md = ["~/.config/kiro/memory.md", "~/.config/claude/memory.md"]
+
+[sync]
+link_mode = "link"      # "link" (symlink) or "copy"
+provider = "copy"       # "copy", "rsync", or "git-sync"
+direction = "forward"   # "forward", "reverse", or "bidirectional"
+exclude = [".DS_Store", "*.tmp"]
+dry_run = false
+```
+
+### Minimal Setup (no file access)
+
+For LLMs that can't write files:
+
+1. Copy `templates/minimal/` anywhere
 2. Fill in `identity.md`, `soul.md`, and `user.md`
-3. Attach all six files as context to your LLM
-4. The assistant reads `soul-protocol.md` first and initializes from there
+3. Paste all 6 files as context when chatting
 
-### Full (agent runtimes)
-
-1. Copy `templates/full/` to your soul directory (e.g., `~/.soul/`)
-2. Fill in the core files (identity, soul, user, system)
-3. Configure `soul.config.yml` with your knowledge provider, domains, and vault
-4. Run `soul-sync` to populate knowledge from your agent runtime
-5. The orchestrator loads extensions automatically when the files exist
+The assistant will propose memory updates using a structured envelope format. You apply them between sessions.
 
 ## What Makes This Different
 
@@ -156,21 +246,38 @@ Integration patterns:
 - **Cursor / Copilot** — export core files to `.cursorrules` or `copilot-instructions.md`
 - **Claude / ChatGPT** — paste minimal template files as context, use update envelopes
 
+### Git Workflow
+
+Your `~/.soul/` directory is your private git repo:
+
+```bash
+# Your changes
+git add identity.md soul.md user.md
+git commit -m "update my soul"
+git push  # To your private remote
+
+# Update the protocol
+npx portable-soul --update
+```
+
 ## Project Structure
 
 ```
-portable-soul/
-├── README.md              ← You are here
-├── ARCHITECTURE.md        ← Two-layer design, integration model, comparisons
-├── LICENSE                ← MIT
-├── soul.config.yml        ← Provider, sync, and adapter configuration
+portable-soul/                 # npm package
+├── README.md                  ← You are here
+├── ARCHITECTURE.md            ← Two-layer design, integration model, comparisons
+├── LICENSE                    ← MIT
+├── package.json               ← npm config (npx portable-soul)
+├── cli.js                    ← CLI installer (Node.js)
+├── cli.ps1                   ← CLI installer (PowerShell, no Node.js needed)
+├── soul.config.yml            ← Default config template
 ├── providers/
-│   └── README.md          ← Knowledge provider interface + implementations
+│   └── README.md              ← Knowledge provider interface + implementations
 ├── tools/
-│   └── soul-sync          ← Extract knowledge from agent runtimes → soul repo
+│   └── soul-sync              ← Extract knowledge from agent runtimes → soul repo
 ├── templates/
-│   ├── minimal/           ← Portable core (6 files, any LLM)
-│   └── full/              ← Core + extensions (agent runtimes)
+│   ├── minimal/               ← Portable core (6 files, any LLM)
+│   └── full/                  ← Core + extensions (agent runtimes)
 └── examples/
     └── README.md
 ```

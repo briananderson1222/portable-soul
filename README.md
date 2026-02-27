@@ -9,16 +9,26 @@ Portable Soul defines a structured, human-readable system that decouples who an 
 ## Get Started in One Command
 
 ```bash
-npx portable-soul
+npx portable-soul              # Install to ~/.soul/
 ```
 
-The installer creates `~/.soul/` — a clean Obsidian vault and private git repo. Your identity and memory files are yours to edit. Update anytime:
+The installer creates `~/.soul/` — a clean Obsidian vault and private git repo. Your identity and memory files are yours to edit.
+
+**Additional options:**
 
 ```bash
-npx portable-soul --update
+npx portable-soul --dir PATH   # Install to custom directory
+npx portable-soul --yes        # Non-interactive mode (skip prompts)
+npx portable-soul --help       # Show all options
 ```
 
-On Windows without Node.js:
+**Update your soul protocol:**
+
+```bash
+npx portable-soul --update     # Refresh soul-protocol.md to latest
+```
+
+**On Windows without Node.js:**
 
 ```powershell
 .\cli.ps1              # Downloads templates from GitHub
